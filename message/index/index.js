@@ -1,9 +1,8 @@
-// pages/comment/comment.js
-const model = require('../index/index.js')
-const config = require('../../config.js')
+const config = require('../../utils/config.js')
 const util = require('../../utils/util.js')
 const app = getApp()
 var mydata = {
+
   end: 0,
   replyUserName: ""
 }
@@ -21,15 +20,16 @@ Page({
    */
   onLoad: function (options) {
     var that = this;
-    mydata.sourceId = options.sourceId
+    mydata.sourceId = ""
     mydata.commentId = "";
-    mydata.replyUserName = "";
+    mydata.replyUserName = "" ;
     //设置scroll的高度
     wx.getSystemInfo({
       success: function (res) {
+           
         that.setData({
           scrollHeight: res.windowHeight,
-          userId: app.globalData.haulUserInfo.id
+          username: app.globalData.userInfo.nickName
         });
       }
     });
@@ -40,9 +40,10 @@ Page({
    * 页面下拉刷新事件的处理函数
    */
   refresh: function () {
-    console.log('refresh');
+    // console.log('refresh');
     mydata.page = 1
     this.getPageInfo(mydata.page, function () {
+      // console.log('showpageInfo',this.getPageInfo)
       this.setData({
         list: []
       })
@@ -53,7 +54,7 @@ Page({
    * 页面上拉触底事件的处理函数
    */
   bindDownLoad: function () {
-    console.log("onReachBottom");
+    // console.log("onReachBottom");
     var that = this;
     if (mydata.end == 0) {
       mydata.page++;
@@ -61,13 +62,14 @@ Page({
     }
   },
   bindReply: function (e) {
-    console.log(e);
-    mydata.commentId = e.target.dataset.commentid;
+ 
+    mydata.commentId = '';
     mydata.replyUserName = e.target.dataset.commentusername;
     this.setData({
       replyUserName: mydata.replyUserName,
       reply: true
     })
+  
   },
   // 合并数组
   addArr(arr1, arr2) {
@@ -77,14 +79,14 @@ Page({
     return arr1;
   },
   deleteComment: function (e) {
-    console.log(e);
     var that = this;
     var commentId = e.target.dataset.commentid;
-
+    // console.log('delete操作', e.target.dataset.commentid)
     wx.showModal({
       title: '删除评论',
       content: '请确认是否删除该评论？',
       success: function (res) {
+ 
         if (res.confirm) {
           wx.request({
             url: config.deleteComment,
@@ -95,7 +97,8 @@ Page({
             header: {
               "content-type": "application/x-www-form-urlencoded;charset=utf-8",
             },
-            success: res => {
+            success:function(res) {
+            //  console.log(res)
               that.refresh();
               wx.showToast({
                 title: "删除成功"
@@ -103,7 +106,7 @@ Page({
             }
           })
         } else if (res.cancel) {
-          console.log('用户点击取消')
+          // console.log('用户点击取消')
         }
       }
     })
@@ -121,15 +124,15 @@ Page({
   getPageInfo(page, callback) {
     var that = this;
     util.showLoading();
-    console.log("getPageInfo");
-    console.log("page" + page);
+    // console.log("getPageInfo");//
+    // console.log("page" + page);
     var limited = 6;
     var offset = (page - 1) * 6;
     wx.request({
       url: config.getComments,
       method: "POST",
       data: {
-        sourceId: mydata.sourceId,
+
         limited: limited,
         offset: offset
       },
@@ -137,7 +140,7 @@ Page({
         "content-type": "application/x-www-form-urlencoded;charset=utf-8",
       },
       success: res => {
-        console.log(res);
+        // console.log('拿到网页的data',res);
         if (page == 1) {
           that.data.list = res.data;
           that.setData({
@@ -164,7 +167,6 @@ Page({
   submitForm(e) {
     var form = e.detail.value;
     var that = this;
-    console.log(app.globalData.haulUserInfo);
     if (form.comment == "") {
       util.showLog('请输入评论');
       return;
@@ -174,26 +176,23 @@ Page({
       url: config.insertComment,
       method: "POST",
       data: {
-        sourceId: mydata.sourceId,
         comment: form.comment,
-        userId: app.globalData.haulUserInfo.id,
-        userName: app.globalData.haulUserInfo.userName,
-        replyCommentId: mydata.commentId,
+        userName: app.globalData.userInfo.nickName,
+        replyCommentId: '1001',
         replyUserName: mydata.replyUserName,
-        userPhoto: app.globalData.haulUserInfo.userPhoto
+        userPhoto: app.globalData.userInfo.avatarUrl
       },
       header: {
         "content-type": "application/x-www-form-urlencoded;charset=utf-8",
         //token: app.globalData.token
       },
       success: res => {
-        console.log(res)
-        if (res.data.success) {
+        if (res.data) {
           wx.showToast({
-            title: "回复成功"
+            title: "评论成功"
           })
           that.refresh();
-          mydata.commentId = "";
+          mydata.commentId = "1001";
           mydata.replyUserName = "";
           this.setData({
             replyUserName: mydata.replyUserName,
